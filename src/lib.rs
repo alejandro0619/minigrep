@@ -1,4 +1,3 @@
-pub mod config {
 use std::error::Error;
 use std::fs::{self};
 
@@ -11,16 +10,25 @@ pub struct ArgsConfig {
 }
 
  impl ArgsConfig {
-  pub fn parse_config(args: &[String]) -> Result<ArgsConfig, &'static str>{
-    if args.len() < 3 {
-      return Err("not enough arguments");
-    } else {
-      let query = args[1].clone();
-      let filename = args[2].clone();
+  pub fn parse_config(mut args: env::Args) -> Result<ArgsConfig, &'static str>{
+    args.next();
+    let query = match args.next(){
+      Some(args) => args,
+      None => return Err("Didn't get a query string")
+    };
+    let filename = match args.next(){
+      Some(args) => args,
+      None => return Err("Didn't get any filename")
+    };
+
       let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
-      Ok(ArgsConfig { query, filename, case_sensitive })
+      Ok(ArgsConfig {
+         query, 
+         filename, 
+         case_sensitive 
+      })
     }
-  }
+  
  }
 
  pub fn run(config: ArgsConfig) -> Result<(), Box<dyn Error>> {
@@ -38,22 +46,18 @@ pub struct ArgsConfig {
   Ok(())
 }
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-  let mut results = Vec::new();
-  for line in contents.lines() {
-    if line.contains(query) {
-      results.push(line);
-    }
-  }
-  results
+  contents
+    .lines()
+    .filter(| line | line.contains(query))
+    .collect()
 }
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
   let query = query.to_lowercase();
-  let mut results = Vec::new();
-  for line in contents.lines() {
-    if line.to_lowercase().contains(&query) {
-      results.push(line);
-    }
-  }
-  results
+  contents
+  .lines()
+  .filter(|line| {
+    line.to_lowercase().contains(&query)
+  })
+  .collect()
 }
-}
+
